@@ -90,6 +90,10 @@ if !args.contains("--no-inbound") {
         print("Inbound cleaning is off: no device named \"\(inboundName)\". Install it with: brew install blackhole-16ch")
     }
 }
+// The call's own audio as our microphone would send the call back to itself.
+if let inbound, (inID ?? defaultInputDeviceID()) == inbound.source {
+    fail("The microphone is \(inboundName), which carries the call audio. Pick your real microphone with --in \"<name>\" (see --list).", 2)
+}
 if echoCancel && inbound == nil {
     fail("--echo-cancel needs inbound cleaning: \(inboundName) installed and no --no-inbound.", 2)
 }

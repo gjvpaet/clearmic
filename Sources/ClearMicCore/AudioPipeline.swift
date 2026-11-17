@@ -37,6 +37,8 @@ public final class AudioPipeline {
         guard inFormat.sampleRate > 0, let converter = AVAudioConverter(from: inFormat, to: workFormat) else {
             throw AudioPipelineError(message: "input device has no usable audio format")
         }
+        // Multi-channel inputs (BlackHole 16ch): take the first channel instead of leaving the mix-down undefined.
+        if inFormat.channelCount > 1 { converter.channelMap = [0] }
         let maxQueued = 14_400  // 300 ms at 48 kHz; beyond this we drop instead of adding delay
         // shortcut: an AVAudioEngine tap delivers ~100 ms blocks, so latency is ~100-200 ms;
         // switch to an AUHAL input callback when latency matters.
