@@ -27,6 +27,7 @@ public func cleanFile(input: URL, output: URL, denoiser: Denoiser) throws {
     let chunk = AVAudioPCMBuffer(pcmFormat: inFile.processingFormat, frameCapacity: 4800)!
     while inFile.framePosition < inFile.length {
         try inFile.read(into: chunk)
+        if chunk.frameLength == 0 { break }  // a file shorter than its header claims would otherwise loop forever
         let cleaned = denoiser.clean(toWorkSamples(chunk, using: converter))
         if cleaned.isEmpty { continue }
         let out = AVAudioPCMBuffer(pcmFormat: workFormat, frameCapacity: AVAudioFrameCount(cleaned.count))!

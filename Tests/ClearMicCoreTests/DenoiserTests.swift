@@ -40,9 +40,14 @@ final class DenoiserTests: XCTestCase {
 
         let outFile = try AVAudioFile(forReading: outURL)
         let outBuf = AVAudioPCMBuffer(pcmFormat: outFile.processingFormat, frameCapacity: AVAudioFrameCount(outFile.length))!
-        try outFile.read(into: outBuf)
-        let out = Array(UnsafeBufferPointer(start: outBuf.floatChannelData![0], count: Int(outBuf.frameLength)))
-        XCTAssertGreaterThan(out.count, 96_000)
+        var out: [Float] = []
+        // One read(into:) may return fewer frames than asked for, so read until the end.
+        while outFile.framePosition < outFile.length {
+            try outFile.read(into: outBuf)
+            if outBuf.frameLength == 0 { break }
+            out += UnsafeBufferPointer(start: outBuf.floatChannelData![0], count: Int(outBuf.frameLength))
+        }
+        XCTAssertGreaterThan(out.count, 143_000)
         // Skip the first second while the model adapts. Input RMS of uniform ±0.1 noise is 0.0577.
         let dropDb = 20 * log10(max(rms(out[48_000...]), 1e-9) / 0.0577)
         XCTAssertLessThan(dropDb, -20)
