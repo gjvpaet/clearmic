@@ -2,3 +2,4 @@ vendor/
 .build/
 *.wav
 .DS_Store
+.claude/
