@@ -13,8 +13,9 @@ mkdir -p vendor/lib
 git -C vendor/DeepFilterNet checkout -q "$REV"
 # A tiny file here means git stored a Git LFS pointer instead of the model.
 [ "$(stat -f%z "$MODEL")" -gt 100000 ] || { echo "$MODEL is not a real model file (Git LFS pointer?)" >&2; exit 1; }
-# Our own crate's release profile has no LTO, so Apple's linker can read the result.
-cargo build --release --manifest-path native/Cargo.toml --target-dir vendor/native-target
+# Our own release profile has no LTO, so Apple's linker can read the result.
+# --locked: native/Cargo.lock pins tract to the version DeepFilterNet compiles against.
+cargo build --release --locked --manifest-path native/Cargo.toml --target-dir vendor/native-target
 cp vendor/native-target/release/libclearnative.a vendor/lib/libclearnative.a
 rm -f vendor/lib/libdf.a
 echo "built vendor/lib/libclearnative.a"
