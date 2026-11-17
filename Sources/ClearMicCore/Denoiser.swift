@@ -1,4 +1,4 @@
-import CDeepFilter
+import CNative
 import Foundation
 
 public enum DenoiserError: Error { case modelNotFound(String) }

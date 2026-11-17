@@ -1,0 +1,11 @@
+[package]
+name = "clearnative"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+deep_filter = { path = "../vendor/DeepFilterNet/libDF", default-features = false, features = ["capi"] }
+webrtc-audio-processing = { version = "=2.1.0", features = ["bundled"] }
