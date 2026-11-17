@@ -16,7 +16,10 @@ func printDevices() {
 let args = Array(CommandLine.arguments.dropFirst())
 
 func option(_ name: String) -> String? {
-    guard let i = args.firstIndex(of: name), i + 1 < args.count else { return nil }
+    guard let i = args.firstIndex(of: name) else { return nil }
+    guard i + 1 < args.count else {
+        fail("usage: clearmic [--list] [--in \"<mic name>\"] [--out \"<device name>\"] | --file in.wav out.wav", 2)
+    }
     return args[i + 1]
 }
 
@@ -58,6 +61,10 @@ if let inName = option("--in") {
     }
     inID = inDevice.id
 }
+// Same device both ways would record our own output in a loop.
+if (inID ?? defaultInputDeviceID()) == outDevice.id {
+    fail("Input and output are the same device (\(outName)). Pick your real microphone with --in \"<name>\" (see --list).", 2)
+}
 
 if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
     let done = DispatchSemaphore(value: 0)
@@ -78,7 +85,7 @@ print("ClearMic is running. Select \"\(outName)\" as the microphone in your meet
 
 var reported = 0
 while true {
-    sleep(10)
+    RunLoop.main.run(until: Date().addingTimeInterval(10))  // not sleep: lets main-thread audio notifications arrive
     let dropped = pipeline.droppedSamples
     if dropped > reported {
         print("dropped \(dropped - reported) samples in the last 10 s")

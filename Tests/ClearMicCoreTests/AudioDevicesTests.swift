@@ -8,5 +8,8 @@ final class AudioDevicesTests: XCTestCase {
         XCTAssertFalse(out.name.isEmpty)
         XCTAssertEqual(findDevice(named: out.name, input: false)?.id, out.id)
         XCTAssertNil(findDevice(named: "no such device 123", input: false))
+        if let id = defaultInputDeviceID() {
+            XCTAssertTrue(devices.contains { $0.id == id && $0.hasInput })
+        }
     }
 }
