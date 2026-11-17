@@ -19,7 +19,7 @@ let args = Array(CommandLine.arguments.dropFirst())
 func option(_ name: String) -> String? {
     guard let i = args.firstIndex(of: name) else { return nil }
     guard i + 1 < args.count else {
-        fail("usage: clearmic [--list] [--in \"<mic name>\"] [--out \"<device name>\"] | --file in.wav out.wav", 2)
+        fail("usage: clearmic [--list] [--in \"<mic name>\"] [--out \"<device name>\"] [--listen \"<device name>\"] [--echo-cancel] [--no-inbound] | --file in.wav out.wav", 2)
     }
     return args[i + 1]
 }
@@ -35,7 +35,7 @@ let denoiser: Denoiser
 do {
     denoiser = try Denoiser(modelPath: modelPath)
 } catch {
-    fail("Cannot load the model at \(modelPath). Run scripts/build-libdf.sh from the project folder, or set CLEARMIC_MODEL.", 4)
+    fail("Cannot load the model at \(modelPath). Run scripts/build-native.sh from the project folder, or set CLEARMIC_MODEL.", 4)
 }
 
 if let i = args.firstIndex(of: "--file") {

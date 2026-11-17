@@ -26,6 +26,12 @@ public final class EchoCanceller {
     /// returns the cleaned whole frames ready so far.
     public func clean(_ mic: [Float]) -> [Float] {
         pending.push(mic)
+        // A reference older than the microphone audio is useless: the canceller must hear what was
+        // played before it hears the echo. Tolerate 20 ms of slack so normal block jitter does not
+        // shift the alignment on every call; beyond that, resync to the newest audio.
+        if playedQueue.count > pending.count + 960 {
+            _ = playedQueue.dropOldest(downTo: pending.count)
+        }
         var out: [Float] = []
         while var frame = pending.pop(Self.frameLength) {
             // One played frame per microphone frame keeps the two streams aligned by sample count.
