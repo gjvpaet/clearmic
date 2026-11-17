@@ -11,5 +11,8 @@ final class AudioDevicesTests: XCTestCase {
         if let id = defaultInputDeviceID() {
             XCTAssertTrue(devices.contains { $0.id == id && $0.hasInput })
         }
+        if let id = defaultOutputDeviceID() {
+            XCTAssertTrue(devices.contains { $0.id == id && $0.hasOutput })
+        }
     }
 }

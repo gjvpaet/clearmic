@@ -3,16 +3,22 @@ import CoreAudio
 
 public struct AudioPipelineError: Error { public let message: String }
 
-/// Live path: input device -> Denoiser -> output device.
+/// Live path: input device -> `process` -> output device.
 public final class AudioPipeline {
     private let capture = AVAudioEngine()
     private let playback = AVAudioEngine()
     private let outQueue = FrameBuffer()
-    private let denoiser: Denoiser
+    private let process: ([Float]) -> [Float]
+    private let onPlayed: (([Float]) -> Void)?
     /// Samples discarded because playback fell behind. Written on the audio thread, read for logging only.
     public private(set) var droppedSamples = 0
 
-    public init(denoiser: Denoiser) { self.denoiser = denoiser }
+    /// `process` maps captured 48 kHz mono samples to the samples to play.
+    /// `onPlayed` receives exactly what is sent to the output device, silence included.
+    public init(process: @escaping ([Float]) -> [Float], onPlayed: (([Float]) -> Void)? = nil) {
+        self.process = process
+        self.onPlayed = onPlayed
+    }
 
     private func setDevice(_ id: AudioDeviceID, on node: AVAudioIONode) throws {
         var device = id
@@ -35,22 +41,21 @@ public final class AudioPipeline {
         // shortcut: an AVAudioEngine tap delivers ~100 ms blocks, so latency is ~100-200 ms;
         // switch to an AUHAL input callback when latency matters.
         capture.inputNode.installTap(onBus: 0, bufferSize: 480, format: inFormat) { [self] buffer, _ in
-            outQueue.push(denoiser.clean(toWorkSamples(buffer, using: converter)))
+            outQueue.push(process(toWorkSamples(buffer, using: converter)))
             droppedSamples += outQueue.dropOldest(downTo: maxQueued)
         }
 
-        let source = AVAudioSourceNode(format: workFormat) { [outQueue] _, _, frameCount, bufferList in
+        let source = AVAudioSourceNode(format: workFormat) { [outQueue, onPlayed] _, _, frameCount, bufferList in
             let n = Int(frameCount)
             let dst = UnsafeMutableAudioBufferListPointer(bufferList)[0].mData!.assumingMemoryBound(to: Float.self)
-            if let samples = outQueue.pop(n) {
-                samples.withUnsafeBufferPointer { dst.update(from: $0.baseAddress!, count: n) }
-            } else {
-                dst.update(repeating: 0, count: n)  // nothing ready yet: silence
-            }
+            // Nothing ready yet means silence.
+            let samples = outQueue.pop(n) ?? [Float](repeating: 0, count: n)
+            samples.withUnsafeBufferPointer { dst.update(from: $0.baseAddress!, count: n) }
+            onPlayed?(samples)
             return noErr
         }
         playback.attach(source)
-        // The mixer copies our mono signal to both BlackHole channels.
+        // The mixer copies our mono signal to every output channel.
         playback.connect(source, to: playback.mainMixerNode, format: workFormat)
 
         try playback.start()

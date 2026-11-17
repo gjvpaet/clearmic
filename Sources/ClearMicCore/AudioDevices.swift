@@ -43,14 +43,19 @@ public func allAudioDevices() -> [AudioDevice] {
     }
 }
 
-/// The system default microphone, or nil if there is none.
-public func defaultInputDeviceID() -> AudioDeviceID? {
-    var addr = address(kAudioHardwarePropertyDefaultInputDevice)
+private func defaultDevice(_ selector: AudioObjectPropertySelector) -> AudioDeviceID? {
+    var addr = address(selector)
     var id = AudioDeviceID(kAudioObjectUnknown)
     var size = UInt32(MemoryLayout<AudioDeviceID>.size)
     let status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &addr, 0, nil, &size, &id)
     return status == noErr && id != kAudioObjectUnknown ? id : nil
 }
+
+/// The system default microphone, or nil if there is none.
+public func defaultInputDeviceID() -> AudioDeviceID? { defaultDevice(kAudioHardwarePropertyDefaultInputDevice) }
+
+/// The system default speakers or headphones, or nil if there are none.
+public func defaultOutputDeviceID() -> AudioDeviceID? { defaultDevice(kAudioHardwarePropertyDefaultOutputDevice) }
 
 /// Finds a device by exact name that can do input (`input: true`) or output.
 public func findDevice(named name: String, input: Bool) -> AudioDevice? {
