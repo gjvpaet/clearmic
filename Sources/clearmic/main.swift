@@ -13,6 +13,7 @@ func printDevices() {
     }
 }
 
+setvbuf(stdout, nil, _IOLBF, 0)  // show status and drop counts at once, even when output is piped to a file
 let args = Array(CommandLine.arguments.dropFirst())
 
 func option(_ name: String) -> String? {
